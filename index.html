@@ -382,7 +382,7 @@ function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<
 function getLog(ds){ if(!state.logs[ds]) state.logs[ds] = { water:false, meditation:false, affirmation:false, exercise:false, gratitude:false, reading:false, visionScript:false, todoDone:false }; return state.logs[ds]; }
 
 // ---------- Google Drive sync ----------
-const GOOGLE_CLIENT_ID = '790506952741-mnbhsno9f55uvc1v3uas786pr90cbv8l.apps.googleusercontent.com';
+const GOOGLE_CLIENT_ID = 'PASTE_YOUR_CLIENT_ID_HERE.apps.googleusercontent.com';
 const DRIVE_FILENAME = 'everyday-app-data.json';
 let accessToken = null;
 let tokenClient = null;
@@ -391,7 +391,8 @@ let driveFileId = localStorage.getItem('everyday-drive-file-id') || null;
 function waitForGis(cb, tries){
   tries = tries || 0;
   if(window.google && google.accounts && google.accounts.oauth2){ cb(); }
-  else if(tries < 40){ setTimeout(()=>waitForGis(cb, tries+1), 250); }
+  else if(tries < 240){ setTimeout(()=>waitForGis(cb, tries+1), 500); }
+  else { showToast("Google sign-in couldn't load — check your connection"); }
 }
 function initGis(){
   if(GOOGLE_CLIENT_ID.indexOf('PASTE_YOUR')===0) return;
@@ -410,8 +411,13 @@ function initGis(){
   });
 }
 function connectDrive(){
-  if(!tokenClient){ showToast('Still loading Google sign-in — try again in a moment'); return; }
-  tokenClient.requestAccessToken({ prompt: 'consent' });
+  if(tokenClient){ tokenClient.requestAccessToken({ prompt: 'consent' }); return; }
+  showToast('Loading Google sign-in — one moment');
+  waitForGis(()=>{
+    initGis();
+    if(tokenClient) tokenClient.requestAccessToken({ prompt: 'consent' });
+    else showToast("Couldn't load Google sign-in — try reloading the page");
+  });
 }
 function disconnectDrive(){
   accessToken = null;
