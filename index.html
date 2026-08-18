@@ -1,0 +1,999 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+<title>Everyday</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#E3EEEA">
+<link rel="apple-touch-icon" href="icon-192.png">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+:root{
+  --ink:#3D5257;
+  --ink-soft:#7C9296;
+  --parchment:#E3EEEA;
+  --parchment-2:#D6E6E1;
+  --card:#F3F8F6;
+  --moss:#3A6B63;
+  --moss-dark:#2A4F49;
+  --moss-tint:#D7E9E5;
+  --gold:#C08A3E;
+  --gold-tint:#F3E3C4;
+  --rule:#C9DCD7;
+  --white:#FBFEFD;
+  --danger:#A6452F;
+  --shadow: 0 1px 2px rgba(61,82,87,0.06), 0 4px 10px rgba(61,82,87,0.05);
+}
+*{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+html,body{margin:0; padding:0; height:100%;}
+body{
+  background: radial-gradient(1200px 600px at 10% -10%, #F3EFE2 0%, transparent 60%), var(--parchment);
+  color:var(--ink);
+  font-family:'IBM Plex Sans', sans-serif;
+  min-height:100vh;
+  display:flex;
+  justify-content:center;
+}
+.app{ width:100%; max-width:540px; min-height:100vh; display:flex; flex-direction:column; }
+
+.masthead{
+  padding:22px 18px 12px;
+  border-bottom:1px solid var(--rule);
+  background:linear-gradient(180deg, var(--parchment-2), var(--parchment));
+}
+.eyebrow{
+  font-family:'IBM Plex Mono', monospace; font-size:11px; letter-spacing:0.16em;
+  color:var(--moss-dark); text-transform:uppercase; display:flex; align-items:center; gap:8px;
+}
+.eyebrow::before{ content:''; width:6px; height:6px; border-radius:50%; background:var(--gold); display:inline-block; }
+.masthead h1{ font-family:'Fraunces', serif; font-weight:600; font-size:26px; margin:6px 0 2px; letter-spacing:-0.01em; }
+.masthead .sub{ font-size:12.5px; color:var(--ink-soft); }
+.masthead-top{ display:flex; align-items:center; justify-content:space-between; }
+.home-btn{
+  background:var(--moss); color:var(--white); border:none; border-radius:20px;
+  font-family:'IBM Plex Mono', monospace; font-size:11px; letter-spacing:0.04em;
+  padding:8px 14px; cursor:pointer; display:flex; align-items:center; gap:6px; flex-shrink:0;
+}
+.home-btn svg{ width:13px; height:13px; }
+.home-btn svg path{ stroke:var(--white); }
+.sync-btn{
+  background:transparent; color:var(--moss-dark); border:1px solid var(--moss); border-radius:20px;
+  font-family:'IBM Plex Mono', monospace; font-size:10.5px; letter-spacing:0.03em;
+  padding:7px 12px; cursor:pointer; flex-shrink:0;
+}
+.sync-btn.connected{ background:var(--moss); color:var(--white); }
+.header-btns{ display:flex; gap:8px; align-items:center; }
+
+/* Top tabs */
+.tabstrip{
+  display:flex; flex-wrap:wrap; gap:6px; padding:12px 14px 14px;
+  background:var(--parchment); border-bottom:1px solid var(--rule);
+}
+.tab-btn{
+  flex:0 0 auto; background:var(--card); border:1px solid var(--rule); color:var(--ink-soft);
+  font-family:'IBM Plex Mono', monospace; font-size:11px; letter-spacing:0.03em;
+  padding:8px 12px; border-radius:20px; cursor:pointer; white-space:nowrap;
+  transition:background .15s ease, color .15s ease, border-color .15s ease;
+}
+.tab-btn.active{ background:var(--moss); color:var(--white); border-color:var(--moss); }
+
+main{ flex:1; padding:18px 16px 60px; overflow-y:auto; }
+
+.section-title{
+  font-family:'Fraunces', serif; font-size:15px; font-weight:600; color:var(--ink);
+  margin:20px 4px 10px; display:flex; align-items:baseline; justify-content:space-between;
+}
+.section-title:first-child{ margin-top:0; }
+.section-title span.count{ font-family:'IBM Plex Mono', monospace; font-size:11px; color:var(--ink-soft); font-weight:400; }
+
+/* Cards */
+.card{ background:var(--card); border:1px solid var(--rule); border-radius:14px; padding:14px; margin-bottom:10px; box-shadow:var(--shadow); }
+.row{ display:flex; align-items:center; gap:12px; }
+.row-title{ flex:1; }
+.row-title .name{ font-family:'Fraunces', serif; font-size:15.5px; font-weight:500; color:var(--ink); }
+.row-title .meta{ font-family:'IBM Plex Mono', monospace; font-size:10.5px; color:var(--ink-soft); margin-top:2px; }
+.open-link{ font-family:'IBM Plex Mono', monospace; font-size:10.5px; color:var(--moss-dark); background:none; border:none; cursor:pointer; padding:4px 0; text-decoration:underline; }
+
+.toggle{
+  width:38px; height:38px; border-radius:50%; border:1.5px solid var(--moss); background:var(--white);
+  display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0;
+  transition:background .15s ease, transform .1s ease;
+}
+.toggle:active{ transform:scale(0.92); }
+.toggle svg{ opacity:0; transition:opacity .15s ease; }
+.toggle.done{ background:var(--moss); border-color:var(--moss); }
+.toggle.done svg{ opacity:1; }
+.toggle svg path{ stroke:var(--white); }
+
+/* Weekly view */
+.week-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+.week-head .label{ font-family:'Fraunces', serif; font-size:15px; font-weight:600; }
+.week-nav{ display:flex; gap:6px; }
+.week-nav button{ border:1px solid var(--rule); background:var(--white); border-radius:8px; width:28px; height:28px; cursor:pointer; color:var(--moss-dark); font-family:'IBM Plex Mono', monospace; }
+.week-grid{ display:grid; grid-template-columns:repeat(7,1fr); gap:6px; }
+.week-cell{
+  display:flex; flex-direction:column; align-items:center; gap:6px; padding:8px 2px 10px;
+  border-radius:12px; border:1px solid var(--rule); background:var(--white); cursor:pointer;
+}
+.week-cell.today{ border-color:var(--gold); border-width:2px; }
+.week-cell.selected{ background:var(--moss-tint); border-color:var(--moss); }
+.week-cell .dow{ font-family:'IBM Plex Mono', monospace; font-size:9px; color:var(--ink-soft); text-transform:uppercase; }
+.week-cell .dnum{ font-family:'Fraunces', serif; font-size:15px; font-weight:600; color:var(--ink); }
+.week-dots{ display:grid; grid-template-columns:repeat(2,1fr); gap:3px; margin-top:2px; }
+.week-dot{ width:6px; height:6px; border-radius:50%; border:1px solid var(--moss); background:transparent; }
+.week-dot.on{ background:var(--moss); }
+
+.day-detail{ background:var(--card); border:1px solid var(--rule); border-radius:14px; padding:14px; margin-top:12px; }
+.day-detail .dd-title{ font-family:'Fraunces', serif; font-size:15px; font-weight:600; margin-bottom:8px; }
+.dd-row{ display:flex; align-items:center; justify-content:space-between; padding:7px 0; border-bottom:1px dashed var(--rule); font-size:13.5px; }
+.dd-row:last-child{ border-bottom:none; }
+.dd-status{ font-family:'IBM Plex Mono', monospace; font-size:10.5px; }
+.dd-status.done{ color:var(--moss-dark); }
+.dd-status.pending{ color:var(--ink-soft); }
+
+/* Meditation */
+.timer-options{ display:flex; gap:8px; margin-bottom:12px; }
+.timer-options button{
+  flex:1; background:var(--card); border:1px solid var(--rule); border-radius:12px; padding:12px 6px;
+  font-family:'IBM Plex Mono', monospace; font-size:13px; color:var(--ink); cursor:pointer;
+}
+.timer-options button.active{ background:var(--moss); color:var(--white); border-color:var(--moss); }
+.timer-display{
+  text-align:center; padding:22px 10px; background:var(--card); border:1px solid var(--rule); border-radius:16px; margin-bottom:12px;
+}
+.timer-display .time{ font-family:'Fraunces', serif; font-size:46px; font-weight:600; color:var(--moss-dark); }
+.timer-display .state{ font-family:'IBM Plex Mono', monospace; font-size:11px; color:var(--ink-soft); margin-top:4px; text-transform:uppercase; letter-spacing:0.06em; }
+.video-wrap{ position:relative; width:100%; padding-top:56.25%; border-radius:12px; overflow:hidden; margin-bottom:12px; border:1px solid var(--rule); }
+.video-wrap iframe{ position:absolute; top:0; left:0; width:100%; height:100%; border:0; }
+
+/* Vision / reading text */
+.vision-text{
+  background:var(--card); border:1px solid var(--rule); border-radius:14px; padding:20px 18px; margin-bottom:14px;
+  font-family:'Fraunces', serif; font-size:16px; line-height:1.75; color:var(--ink);
+}
+.vision-text p{ margin:0 0 14px; }
+.vision-text p:last-child{ margin-bottom:0; font-style:italic; color:var(--moss-dark); }
+
+/* Forms */
+.field-label{ font-family:'IBM Plex Mono', monospace; font-size:10.5px; letter-spacing:0.05em; color:var(--ink-soft); text-transform:uppercase; margin-bottom:6px; display:block; }
+.add-form{ background:var(--card); border:1px dashed var(--rule); border-radius:14px; padding:14px; margin-bottom:14px; }
+.add-form input, .add-form textarea{
+  width:100%; border:1px solid var(--rule); background:var(--white); border-radius:9px; padding:10px 12px;
+  font-family:'IBM Plex Sans', sans-serif; font-size:14px; color:var(--ink); margin-bottom:8px; resize:vertical;
+}
+.add-form textarea{ min-height:64px; }
+.add-form input:focus, .add-form textarea:focus{ outline:none; border-color:var(--moss); }
+.btn{
+  font-family:'IBM Plex Mono', monospace; font-size:12px; letter-spacing:0.03em; background:var(--moss); color:var(--white);
+  border:none; border-radius:9px; padding:10px 16px; cursor:pointer; transition:background .15s ease;
+}
+.btn:active{ background:var(--moss-dark); }
+.btn-row{ display:flex; gap:8px; }
+
+/* Notes / goals list */
+.note-card{ background:var(--card); border:1px solid var(--rule); border-radius:14px; padding:14px; margin-bottom:10px; box-shadow:var(--shadow); }
+.note-date{ font-family:'IBM Plex Mono', monospace; font-size:10.5px; color:var(--ink-soft); }
+.note-text{ margin-top:6px; font-size:13.5px; line-height:1.5; color:var(--ink); white-space:pre-wrap; }
+.note-del{ margin-top:8px; border:none; background:none; font-family:'IBM Plex Mono', monospace; font-size:10.5px; color:var(--danger); cursor:pointer; padding:0; }
+
+.goal-row{ display:flex; align-items:flex-start; gap:10px; background:var(--card); border:1px solid var(--rule); border-radius:12px; padding:12px; margin-bottom:8px; }
+.goal-row .txt{ flex:1; font-size:14px; line-height:1.4; }
+.goal-row.done .txt{ text-decoration:line-through; color:var(--ink-soft); }
+.small-toggle{ width:24px; height:24px; border-radius:50%; border:1.5px solid var(--moss); background:var(--white); display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0; }
+.small-toggle.done{ background:var(--moss); }
+.small-toggle svg{ width:12px; height:12px; opacity:0; }
+.small-toggle.done svg{ opacity:1; }
+.small-toggle svg path{ stroke:var(--white); }
+.goal-del{ border:none; background:none; color:var(--danger); font-family:'IBM Plex Mono', monospace; font-size:10.5px; cursor:pointer; }
+
+.empty{ text-align:center; padding:36px 20px; color:var(--ink-soft); }
+.empty .sig{ font-family:'Fraunces', serif; font-size:32px; color:var(--moss); margin-bottom:6px; }
+.empty p{ font-size:13px; line-height:1.5; margin:4px 0 0; }
+
+.loading{ padding:60px 20px; text-align:center; font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--ink-soft); }
+
+.toast{
+  position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(10px);
+  background:#2A4247; color:var(--white); font-family:'IBM Plex Mono', monospace; font-size:11.5px;
+  padding:9px 16px; border-radius:20px; opacity:0; pointer-events:none; transition:opacity .2s ease, transform .2s ease; z-index:50; white-space:nowrap;
+}
+.toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+
+.exercise-card{ background:var(--card); border:1px solid var(--rule); border-radius:16px; padding:18px; margin-bottom:14px; }
+.exercise-card .day-tag{ font-family:'IBM Plex Mono', monospace; font-size:10.5px; color:var(--gold); text-transform:uppercase; letter-spacing:0.06em; }
+.exercise-card h3{ font-family:'Fraunces', serif; font-size:19px; margin:6px 0 8px; }
+.exercise-card .sets{ font-family:'IBM Plex Mono', monospace; font-size:12.5px; color:var(--moss-dark); margin-bottom:8px; }
+.exercise-card .desc{ font-size:13.5px; line-height:1.55; color:var(--ink-soft); }
+.watch-link{
+  display:inline-flex; align-items:center; gap:6px; margin-top:12px;
+  font-family:'IBM Plex Mono', monospace; font-size:11.5px; color:var(--white);
+  background:var(--moss); border-radius:20px; padding:8px 14px; text-decoration:none;
+}
+.watch-link svg{ width:12px; height:12px; }
+.watch-link svg path{ fill:var(--white); }
+
+/* Morning strip: goal reminder + quote */
+.morning-strip{ margin-bottom:16px; }
+.reminder-card{
+  background:var(--gold-tint); border:1px solid var(--gold); border-radius:14px;
+  padding:14px 16px; margin-bottom:10px;
+}
+.reminder-card .rc-label{
+  font-family:'IBM Plex Mono', monospace; font-size:10px; letter-spacing:0.08em; text-transform:uppercase;
+  color:var(--gold); margin-bottom:4px;
+}
+.reminder-card .rc-text{ font-family:'Fraunces', serif; font-size:16px; font-weight:500; color:var(--ink); line-height:1.4; }
+.quote-card{
+  background:#2A4247; border-radius:14px; padding:16px 18px; color:var(--white);
+}
+.quote-card .qc-mark{ font-family:'Fraunces', serif; font-size:26px; color:var(--gold); line-height:0.6; }
+.quote-card .qc-text{ font-family:'Fraunces', serif; font-size:15.5px; font-style:italic; line-height:1.55; margin-top:4px; }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="masthead">
+    <div class="masthead-top">
+      <div class="eyebrow">Everyday</div>
+      <div class="header-btns">
+        <button class="sync-btn" id="syncBtn">Connect Drive</button>
+        <button class="home-btn" id="homeBtnFixed"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg>Home</button>
+      </div>
+    </div>
+    <h1 id="headTitle">Home</h1>
+    <div class="sub" id="headSub"></div>
+  </header>
+
+  <div class="tabstrip" id="tabstrip">
+    <button class="tab-btn active" data-tab="home">Home</button>
+    <button class="tab-btn" data-tab="meditate">Meditate</button>
+    <button class="tab-btn" data-tab="affirm">Affirm</button>
+    <button class="tab-btn" data-tab="vision">Vision Script</button>
+    <button class="tab-btn" data-tab="today">One Thing</button>
+    <button class="tab-btn" data-tab="exercise">Exercise</button>
+    <button class="tab-btn" data-tab="gratitude">Gratitude</button>
+    <button class="tab-btn" data-tab="reading">Reading</button>
+    <button class="tab-btn" data-tab="notes">Self-Note</button>
+    <button class="tab-btn" data-tab="goals">Goals</button>
+  </div>
+
+  <main id="content"><div class="loading">opening…</div></main>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const AUDIO_DATA = {
+  med10: "meditation-10.mp3",
+  med15: "meditation-15.mp3",
+  med20: "meditation-20.mp3",
+  affirm: "affirmation.mp3"
+};
+const STORAGE_KEY = 'vision-app-data';
+const CHECK = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l5 5L20 6"/></svg>';
+
+let state = { logs:{}, oneThingMind:'', todos:{}, selfNotes:[], goals:[] };
+let activeTab = 'home';
+let calMonthOffset = 0;
+let saveTimer = null;
+
+const MED_OPTIONS = [
+  { label:'10 min', sec:600, key:'med10' },
+  { label:'15 min', sec:900, key:'med15' },
+  { label:'20 min', sec:1200, key:'med20' }
+];
+const AFFIRM_KEY = 'affirm';
+const AFFIRMATIONS = [
+  "I am a consistently profitable trader.",
+  "I generate an income I can rely on.",
+  "I am a consistent winner.",
+  "I identify my edge.",
+  "I am mindful, patient, and focused.",
+  "I pre-define my risk, and I plan the trade.",
+  "I have a series-of-trades perspective.",
+  "I think in probabilities.",
+  "I trade the best, and I leave the rest.",
+  "I always follow my trading rules.",
+  "I protect my account above all else.",
+  "If there are no trading opportunities, I walk away.",
+  "I earn and protect my capital.",
+  "I follow my strategy.",
+  "I am a magnet for wealth.",
+  "I am worthy of abundance.",
+  "I am successful.",
+  "I have confidence in my abilities.",
+  "I am powerful.",
+  "I am calm.",
+  "I am focused.",
+  "I am a disciplined trader.",
+  "I am loving kindness, compassion, and acceptance."
+];
+
+const MOTIVATION_QUOTES = [
+  "Discipline today is the account balance of tomorrow. Trade the plan, not the moment.",
+  "Every candle you don't chase is a decision you'll thank yourself for tonight.",
+  "The calm you bring to the charts is the same calm Saanjh learns from watching you.",
+  "You don't need every trade to work. You need your process to work, every time.",
+  "Strong body, clear mind, steady hands — that's the whole edge, really.",
+  "Abundance isn't luck. It's what shows up when patience meets preparation.",
+  "The best trade some days is the one you walked away from.",
+  "Small, consistent wins compound quieter than losses, but they compound longer.",
+  "You are building two things at once this year — a portfolio and a daughter who watches how you build it.",
+  "Rest is not the opposite of discipline. It's part of it.",
+  "The market will still be there tomorrow. Protect the capital, protect the calm.",
+  "Confidence isn't knowing you're right. It's trusting your rules even when you're not sure.",
+  "Every rep, every trade, every page you read to her — none of it is wasted.",
+  "You get to decide what kind of trader, and what kind of mother, today is going to shape.",
+  "The version of you that hits 8% this year is being built in mornings exactly like this one.",
+  "Slow is smooth. Smooth is profitable.",
+  "Gratitude first, strategy second — in that order, always.",
+  "You don't have to feel ready. You just have to follow what you already know works.",
+  "The account grows the same way the body does — quietly, with reps nobody claps for.",
+  "Today's one thing, done well, is worth more than five things done anxiously."
+];
+
+const GRATITUDE_LIST = [
+  "I am grateful that my family and friends are always happy, healthy, prosperous and positive in life.",
+  "I am thankful for my healthy mind and body.",
+  "I am happy and grateful for the life I love, and the love in my life.",
+  "I am grateful for all the money I have right now and for all the money I am manifesting into my life."
+];
+
+const VISION_TEXT = [
+"It's early. My eyes open on their own, easy and rested. I reach over and find a hand already there. A small squeeze back. Mornings feel light like this now.",
+"The nightstand is clear. The bed gets made without thinking. The room looks back at me, calm — my exhale.",
+"I slip into my workout clothes and move — a walk, a stretch, a real sweat. My body feels strong, alive, capable. I catch myself in the mirror afterward and I look fit, glowing, like someone who takes care of herself.",
+"My wardrobe feels like me — simple, clean, a few good pieces, nothing cluttered. Getting dressed takes no thought, and I still walk out looking put-together.",
+"In the kitchen, Saanjh is already narrating some discovery to herself. 'Mumma, did you know—' I crouch down and actually listen. That hunger in her to know things — it's just who she is now, and some part of me knows I helped build that.",
+"Ronak hands me green tea and kisses my forehead — just because it's morning. One kiss, one hug, every day. Warm and constant.",
+"I move through my day with quiet confidence. People know me as reliable, someone whose word means something — trusted and valued by everyone around me. It feels good, earned, real.",
+"Later, I open my trading account with familiar focus. Up 8% again this year. Steady. Tracked. Real. ₹50,000 landed this month, same as most months, and I spend some of it freely, with a full and grateful heart.",
+"I got here by showing up, day after day. Now it just works, quietly, in the background — the way I always wanted it to.",
+"Some evening this month is date night with Ronak — the one we both protect and look forward to.",
+"At night, Saanjh and I curl up together and read — her favourite ritual, and mine. Her eyes light up at every page. It's some of the sweetest time in my whole day.",
+"At the end of the day, I walk back into that room. Bed made. Nightstand clear. Something settles in me — a deep, steady pride. Calm. Capable. Confident. Proud of who I've become.",
+"\"I am calm, capable, strong, and confident. My account grows 8% a year, I move my body every day, and every night ends with a story and a hug with Saanjh.\""
+];
+
+const EXERCISES = [
+  { name:"Standing Oblique Crunches", sets:"3 sets × 15 each side", desc:"Hold a 3kg weight in each hand, elbow up, crunch your elbow down toward your hip on one side, keeping the movement slow. Switch sides.", equip:"3kg weights ×2", video:"0miEii4wHEI" },
+  { name:"Russian Twists", sets:"3 sets × 20 twists", desc:"Sit on the mat, lean back slightly, feet lifted or grounded, hold one 3kg weight with both hands and rotate side to side, tapping the floor.", equip:"Mat, 3kg weight", video:"C_OjLWMNcqM" },
+  { name:"Bicycle Crunches", sets:"3 sets × 20 (10/side)", desc:"Lie on the mat, hands behind head, bring opposite elbow to opposite knee in a pedaling motion, keeping your lower back pressed down.", equip:"Mat", video:"z2GXKmhXYl8" },
+  { name:"Side Plank with Hip Dips", sets:"3 sets × 12 dips each side", desc:"Prop up on your forearm in a side plank, dip your hip toward the floor and lift back up, targeting the side waist directly.", equip:"Mat", video:"9AntSHKxHlA" },
+  { name:"Standing Side Bends", sets:"3 sets × 15 each side", desc:"Stand tall holding a 3kg weight in each hand, bend sideways at the waist reaching the weight toward your knee, then return to centre.", equip:"3kg weights ×2", video:"ARAWlmlgPbg" },
+  { name:"Resistance Band Woodchoppers", sets:"3 sets × 12 each side", desc:"Anchor the band low, pull it diagonally across your body from hip to opposite shoulder, rotating through the core, not the arms.", equip:"Resistance band", video:"2LrjmwFDCFI" },
+  { name:"Plank Shoulder Taps", sets:"3 sets × 20 taps", desc:"Hold a high plank, tap your opposite shoulder with each hand alternately, keeping your hips as still and square as possible.", equip:"Mat", video:"Ub3x9gt0UlQ" },
+  { name:"Mountain Climbers", sets:"3 sets × 30 seconds", desc:"From a plank position, drive your knees toward your chest quickly, alternating legs, keeping your core braced throughout.", equip:"Mat", video:"hq_0YlyfqGM" },
+  { name:"Weighted Sit-Ups", sets:"3 sets × 15", desc:"Lie on the mat, knees bent, hold one 3kg weight to your chest, sit all the way up and lower back down with control.", equip:"Mat, 3kg weight", video:"E6nUKCuhPHY" },
+  { name:"Side Plank Reach-Unders", sets:"3 sets × 10 each side", desc:"From a side plank, thread your top arm under your body then open it back up toward the ceiling, twisting through the waist.", equip:"Mat", video:"1WLbz8k-O-I" },
+  { name:"Standing Knee-to-Elbow Twists", sets:"3 sets × 20 (10/side)", desc:"Stand and alternate bringing your knee up to meet the opposite elbow, twisting through the torso each time.", equip:"None", video:"z1fwSujYhX8" },
+  { name:"Resistance Band Standing Rotations", sets:"3 sets × 15 each side", desc:"Anchor the band at chest height, hold with both hands and rotate your torso away from the anchor, arms staying extended.", equip:"Resistance band", video:"X515cNmCpxo" },
+  { name:"Flutter Kicks", sets:"3 sets × 30 seconds", desc:"Lie on the mat, lower back pressed down, legs straight and lifted a few inches, kick them in a small, fast alternating motion.", equip:"Mat", video:"K5wuM_gNWyw" },
+  { name:"Boat Pose Hold (block-assisted)", sets:"3 holds × 20 seconds", desc:"Sit on the mat, hold a yoga block between your hands, lean back and lift your shins parallel to the floor, holding steady.", equip:"Mat, yoga block", video:"za2Xm8LIfrw" }
+];
+
+function todayStr(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function uid(){ return Math.random().toString(36).slice(2,9)+Date.now().toString(36); }
+function dayOfYear(d){ const start=new Date(d.getFullYear(),0,0); const diff=d-start; return Math.floor(diff/86400000); }
+function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function getLog(ds){ if(!state.logs[ds]) state.logs[ds] = { water:false, meditation:false, affirmation:false, exercise:false, gratitude:false, reading:false, visionScript:false, todoDone:false }; return state.logs[ds]; }
+
+// ---------- Google Drive sync ----------
+const GOOGLE_CLIENT_ID = 'PASTE_YOUR_CLIENT_ID_HERE.apps.googleusercontent.com';
+const DRIVE_FILENAME = 'everyday-app-data.json';
+let accessToken = null;
+let tokenClient = null;
+let driveFileId = localStorage.getItem('everyday-drive-file-id') || null;
+
+function waitForGis(cb, tries){
+  tries = tries || 0;
+  if(window.google && google.accounts && google.accounts.oauth2){ cb(); }
+  else if(tries < 40){ setTimeout(()=>waitForGis(cb, tries+1), 250); }
+}
+function initGis(){
+  if(GOOGLE_CLIENT_ID.indexOf('PASTE_YOUR')===0) return;
+  tokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: GOOGLE_CLIENT_ID,
+    scope: 'https://www.googleapis.com/auth/drive.file',
+    callback: async (resp)=>{
+      if(resp.error){ showToast('Google sign-in failed'); return; }
+      accessToken = resp.access_token;
+      localStorage.setItem('everyday-signed-in', '1');
+      await syncFromDrive();
+      updateSyncUI();
+      render();
+      showToast('Connected to Google Drive');
+    }
+  });
+}
+function connectDrive(){
+  if(!tokenClient){ showToast('Still loading Google sign-in — try again in a moment'); return; }
+  tokenClient.requestAccessToken({ prompt: 'consent' });
+}
+function disconnectDrive(){
+  accessToken = null;
+  localStorage.removeItem('everyday-signed-in');
+  updateSyncUI();
+  showToast('Disconnected from Google Drive');
+}
+async function driveFetch(url, opts){
+  opts = opts || {};
+  opts.headers = Object.assign({}, opts.headers, { 'Authorization': 'Bearer ' + accessToken });
+  return fetch(url, opts);
+}
+async function findOrCreateDriveFile(){
+  if(driveFileId) return driveFileId;
+  const q = encodeURIComponent("name='" + DRIVE_FILENAME + "' and trashed=false");
+  const res = await driveFetch('https://www.googleapis.com/drive/v3/files?q=' + q + '&spaces=drive&fields=files(id,name)');
+  const data = await res.json();
+  if(data.files && data.files.length){
+    driveFileId = data.files[0].id;
+  } else {
+    const createRes = await driveFetch('https://www.googleapis.com/drive/v3/files', {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json' },
+      body: JSON.stringify({ name: DRIVE_FILENAME, mimeType:'application/json' })
+    });
+    const created = await createRes.json();
+    driveFileId = created.id;
+  }
+  localStorage.setItem('everyday-drive-file-id', driveFileId);
+  return driveFileId;
+}
+async function syncFromDrive(){
+  try{
+    const id = await findOrCreateDriveFile();
+    const res = await driveFetch('https://www.googleapis.com/drive/v3/files/' + id + '?alt=media');
+    if(res.ok){
+      const text = await res.text();
+      if(text && text.trim()){
+        const p = JSON.parse(text);
+        state = { logs:p.logs||{}, oneThingMind:p.oneThingMind||'', todos:p.todos||{}, selfNotes:p.selfNotes||[], goals:p.goals||[] };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      }
+    }
+  }catch(e){ /* keep local copy if Drive is unreachable */ }
+}
+async function syncToDrive(){
+  if(!accessToken) return;
+  try{
+    const id = await findOrCreateDriveFile();
+    await driveFetch('https://www.googleapis.com/upload/drive/v3/files/' + id + '?uploadType=media', {
+      method:'PATCH',
+      headers:{ 'Content-Type':'application/json' },
+      body: JSON.stringify(state)
+    });
+    document.querySelectorAll('.sync-status').forEach(el=> el.textContent = 'synced just now');
+  }catch(e){ showToast("couldn't sync to Drive — saved on this device"); }
+}
+function updateSyncUI(){
+  document.querySelectorAll('.sync-btn').forEach(el=>{
+    el.textContent = accessToken ? 'Drive connected' : 'Connect Drive';
+    el.classList.toggle('connected', !!accessToken);
+  });
+}
+
+async function loadState(){
+  try{
+    const cached = localStorage.getItem(STORAGE_KEY);
+    if(cached){
+      const p = JSON.parse(cached);
+      state = { logs:p.logs||{}, oneThingMind:p.oneThingMind||'', todos:p.todos||{}, selfNotes:p.selfNotes||[], goals:p.goals||[] };
+    }
+  }catch(e){ /* fresh start */ }
+}
+function saveState(){
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(async ()=>{
+    try{
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      if(accessToken) await syncToDrive();
+    }catch(e){ showToast("couldn't save — try again"); }
+  }, 150);
+}
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 1800);
+}
+
+function toggleField(field, ds){
+  const log = getLog(ds || todayStr());
+  log[field] = !log[field];
+  saveState();
+  render();
+}
+
+// ---------- HOME ----------
+const HOME_ITEMS = [
+  { key:'water', name:'Have water in the morning', tab:null },
+  { key:'meditation', name:'Meditation', tab:'meditate' },
+  { key:'affirmation', name:'Affirmation', tab:'affirm' },
+  { key:'visionScript', name:'Vision Script', tab:'vision' },
+  { key:'exercise', name:'Exercise', tab:'exercise' },
+  { key:'gratitude', name:'Gratitude', tab:'gratitude' },
+  { key:'reading', name:'Reading', tab:'reading' }
+];
+let selectedDate = todayStr();
+
+function weekDates(offset){
+  const now = new Date();
+  const dow = now.getDay();
+  const sunday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - dow + offset*7);
+  const dates = [];
+  for(let i=0;i<7;i++){
+    const d = new Date(sunday.getFullYear(), sunday.getMonth(), sunday.getDate()+i);
+    dates.push(d);
+  }
+  return dates;
+}
+function dsOf(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function weekLabel(dates){
+  const a = dates[0], b = dates[6];
+  const fmt = (d)=> d.toLocaleDateString('en-IN',{day:'numeric', month:'short'});
+  return `${fmt(a)} – ${fmt(b)}`;
+}
+function renderWeek(){
+  const dates = weekDates(calMonthOffset);
+  const dows = ['S','M','T','W','T','F','S'];
+  const todayDs = todayStr();
+  let html = `<div class="week-head"><div class="label">${weekLabel(dates)}</div><div class="week-nav">
+    <button data-week="-1">‹</button><button data-week="1">›</button></div></div>`;
+  html += '<div class="week-grid">';
+  dates.forEach((d,i)=>{
+    const ds = dsOf(d);
+    const log = state.logs[ds];
+    let cls = 'week-cell';
+    if(ds===todayDs) cls += ' today';
+    if(ds===selectedDate) cls += ' selected';
+    html += `<div class="${cls}" data-day="${ds}"><div class="dow">${dows[i]}</div><div class="dnum">${d.getDate()}</div>
+      <div class="week-dots">`;
+    HOME_ITEMS.forEach(item=>{
+      html += `<div class="week-dot ${log && log[item.key] ? 'on':''}"></div>`;
+    });
+    html += `</div></div>`;
+  });
+  html += '</div>';
+  return html;
+}
+function renderDayDetail(){
+  const ds = selectedDate;
+  const log = getLog(ds);
+  const isToday = ds===todayStr();
+  const label = new Date(ds+'T00:00:00').toLocaleDateString('en-IN',{weekday:'long', day:'numeric', month:'long'});
+  let html = `<div class="day-detail"><div class="dd-title">${isToday?'Today':label}</div>`;
+  HOME_ITEMS.forEach(item=>{
+    const done = log[item.key];
+    html += `<div class="dd-row"><span>${item.name}</span>
+      <button class="toggle ${done?'done':''}" style="width:30px;height:30px;" data-day-toggle="${item.key}">${CHECK}</button></div>`;
+  });
+  const todoText = state.todos[ds];
+  if(todoText){
+    html += `<div class="dd-row"><span>${escapeHtml(todoText)}</span>
+      <button class="toggle ${log.todoDone?'done':''}" style="width:30px;height:30px;" data-day-toggle="todoDone">${CHECK}</button></div>`;
+  }
+  html += '</div>';
+  return html;
+}
+function renderTodayGoal(){
+  const pending = state.goals.filter(g=>!g.done);
+  const pool = pending.length ? pending : state.goals;
+  if(!pool.length){
+    return `<div class="reminder-card"><div class="rc-label">Goal</div>
+      <div class="rc-text">Add a few goals in the Goals tab to see one here each day.</div></div>`;
+  }
+  const idx = dayOfYear(new Date()) % pool.length;
+  const g = pool[idx];
+  return `<div class="reminder-card"><div class="rc-label">Goal</div>
+    <div class="rc-text">${escapeHtml(g.text)}</div></div>`;
+}
+function renderQuote(){
+  const idx = dayOfYear(new Date()) % MOTIVATION_QUOTES.length;
+  return `<div class="quote-card"><div class="qc-mark">&ldquo;</div><div class="qc-text">${escapeHtml(MOTIVATION_QUOTES[idx])}</div></div>`;
+}
+function renderHome(){
+  let html = `<div class="morning-strip">${renderTodayGoal()}${renderQuote()}</div>`;
+  html += `<div class="card">${renderWeek()}${renderDayDetail()}</div>`;
+  html += `<div class="card" style="text-align:center; margin-top:14px;">
+    <div style="font-family:'IBM Plex Mono',monospace; font-size:10.5px; color:var(--ink-soft); margin-bottom:10px;">keep a copy of your data somewhere safe</div>
+    <button class="btn ghost" id="exportBtn">Export to Excel</button>
+  </div>`;
+  return html;
+}
+function exportBackup(){
+  try{
+    if(typeof XLSX==='undefined'){ showToast("Excel export isn't available right now"); return; }
+    const wb = XLSX.utils.book_new();
+
+    // Sheet 1: Daily log
+    const dayKeys = Object.keys(state.logs).sort();
+    const dailyRows = dayKeys.map(ds=>{
+      const log = state.logs[ds];
+      return {
+        Date: ds,
+        Water: log.water ? 'Yes' : 'No',
+        Meditation: log.meditation ? 'Yes' : 'No',
+        Affirmation: log.affirmation ? 'Yes' : 'No',
+        Exercise: log.exercise ? 'Yes' : 'No',
+        Gratitude: log.gratitude ? 'Yes' : 'No',
+        Reading: log.reading ? 'Yes' : 'No',
+        "Today's Task": state.todos[ds] || '',
+        "Task Done": log.todoDone ? 'Yes' : 'No'
+      };
+    });
+    const dailySheet = XLSX.utils.json_to_sheet(dailyRows.length ? dailyRows : [{Date:'', Water:'', Meditation:'', Affirmation:'', Exercise:'', Gratitude:'', Reading:'', "Today's Task":'', "Task Done":''}]);
+    XLSX.utils.book_append_sheet(wb, dailySheet, 'Daily Log');
+
+    // Sheet 2: Self notes
+    const noteRows = state.selfNotes.slice().reverse().map(n=>{
+      const d = new Date(n.ts);
+      return { Date: d.toLocaleDateString('en-IN'), Time: d.toLocaleTimeString('en-IN'), Note: n.text };
+    });
+    const notesSheet = XLSX.utils.json_to_sheet(noteRows.length ? noteRows : [{Date:'', Time:'', Note:''}]);
+    XLSX.utils.book_append_sheet(wb, notesSheet, 'Self Notes');
+
+    // Sheet 3: Goals
+    const goalRows = state.goals.map(g=>{
+      const d = new Date(g.ts);
+      return { Goal: g.text, Done: g.done ? 'Yes' : 'No', "Added On": d.toLocaleDateString('en-IN') };
+    });
+    const goalsSheet = XLSX.utils.json_to_sheet(goalRows.length ? goalRows : [{Goal:'', Done:'', "Added On":''}]);
+    XLSX.utils.book_append_sheet(wb, goalsSheet, 'Goals');
+
+    // Sheet 4: One thing on my mind (single free-text note)
+    const mindSheet = XLSX.utils.json_to_sheet([{ "On my mind": state.oneThingMind || '' }]);
+    XLSX.utils.book_append_sheet(wb, mindSheet, 'On My Mind');
+
+    XLSX.writeFile(wb, 'everyday-backup-' + todayStr() + '.xlsx');
+    showToast('Excel file downloaded');
+  }catch(e){
+    showToast("couldn't export — try again");
+  }
+}
+
+// ---------- MEDITATE ----------
+function renderMeditate(){
+  const ds = todayStr();
+  const log = getLog(ds);
+  let html = `<div class="section-title">Choose a length<span class="count">${log.meditation?'done today':''}</span></div>`;
+  html += '<div class="timer-options">';
+  MED_OPTIONS.forEach((o,i)=>{
+    html += `<button data-med="${i}" class="${window.__medSel===i?'active':''}">${o.label}</button>`;
+  });
+  html += '</div>';
+  const sel = window.__medSel!=null ? MED_OPTIONS[window.__medSel] : null;
+  if(sel){
+    html += `<audio id="medAudio" src="${AUDIO_DATA[sel.key]}" controls autoplay style="width:100%; margin-bottom:12px; border-radius:10px;"></audio>`;
+    html += `<div class="timer-display"><div class="time" id="timerTime">${fmtMMSS(sel.sec)}</div><div class="state" id="timerState">plays fully offline — time remaining</div></div>`;
+    html += `<div class="btn-row"><button class="btn ghost" id="medDoneBtn">Mark meditation done</button></div>`;
+  } else {
+    html += `<div class="empty"><div class="sig">◐</div><p>Pick 10, 15 or 20 minutes to begin —<br>the audio plays right here, no internet needed.</p></div>`;
+  }
+  return html;
+}
+function fmtMMSS(sec){
+  const m = Math.floor(sec/60), s = sec%60;
+  return String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
+}
+function attachMedAudioHandlers(){
+  const audio = document.getElementById('medAudio');
+  if(!audio) return;
+  audio.addEventListener('timeupdate', ()=>{
+    if(isNaN(audio.duration)) return;
+    const remaining = Math.max(0, Math.round(audio.duration - audio.currentTime));
+    const timeEl = document.getElementById('timerTime');
+    if(timeEl) timeEl.textContent = fmtMMSS(remaining);
+  });
+  audio.addEventListener('ended', ()=>{
+    const log = getLog(todayStr());
+    log.meditation = true;
+    saveState();
+    showToast('meditation marked done');
+    render();
+  });
+}
+
+// ---------- AFFIRM ----------
+function renderAffirm(){
+  const ds = todayStr();
+  const log = getLog(ds);
+  let html = `<audio src="${AUDIO_DATA[AFFIRM_KEY]}" controls autoplay style="width:100%; margin-bottom:12px; border-radius:10px;"></audio>`;
+  html += `<div class="section-title">Read anytime<span class="count">no internet needed</span></div>`;
+  html += '<div class="card">';
+  AFFIRMATIONS.forEach((a,i)=>{
+    html += `<p style="font-family:'Fraunces',serif; font-size:15px; line-height:1.7; margin:${i===0?'0':'10px'} 0 0;">${escapeHtml(a)}</p>`;
+  });
+  html += '</div>';
+  html += `<div class="card"><div class="row"><div class="row-title"><div class="name">Affirmation</div>
+    <div class="meta">${log.affirmation?'done today':'not yet done today'}</div></div>
+    <button class="toggle ${log.affirmation?'done':''}" data-toggle="affirmation">${CHECK}</button></div></div>`;
+  return html;
+}
+
+// ---------- VISION ----------
+function renderVision(){
+  const ds = todayStr();
+  const log = getLog(ds);
+  let html = '<div class="vision-text">';
+  VISION_TEXT.forEach(p=> html += `<p>${escapeHtml(p)}</p>`);
+  html += '</div>';
+  html += `<div class="card"><div class="row"><div class="row-title"><div class="name">Vision Script</div>
+    <div class="meta">${log.visionScript?'done today':'read it, feel it, mark it'}</div></div>
+    <button class="toggle ${log.visionScript?'done':''}" data-toggle="visionScript">${CHECK}</button></div></div>`;
+  return html;
+}
+
+// ---------- TODAY / ONE THING ----------
+function renderToday(){
+  const ds = todayStr();
+  const log = getLog(ds);
+  const todoVal = state.todos[ds] || '';
+  let html = `<div class="section-title">On my mind</div>
+  <div class="add-form">
+    <span class="field-label">A free space — write whatever's there right now</span>
+    <textarea id="mindText" placeholder="What's on your mind...">${escapeHtml(state.oneThingMind)}</textarea>
+    <div class="btn-row"><button class="btn" id="saveMindBtn">Save</button></div>
+  </div>`;
+  html += `<div class="section-title">One thing to do today</div>
+  <div class="add-form">
+    <span class="field-label">The one thing that matters most today</span>
+    <input type="text" id="todoText" placeholder="e.g. Review Tuesday expiry positions" value="${escapeHtml(todoVal)}" maxlength="120">
+    <div class="btn-row"><button class="btn" id="saveTodoBtn">Save</button></div>
+  </div>`;
+  html += `<div class="card"><div class="row"><div class="row-title"><div class="name">One Thing</div>
+    <div class="meta">${log.todoDone?'done today':'mark it done once handled'}</div></div>
+    <button class="toggle ${log.todoDone?'done':''}" data-toggle="todoDone">${CHECK}</button></div></div>`;
+  return html;
+}
+
+// ---------- EXERCISE ----------
+function renderExercise(){
+  const ds = todayStr();
+  const log = getLog(ds);
+  const idx = dayOfYear(new Date()) % EXERCISES.length;
+  const ex = EXERCISES[idx];
+  let html = `<div class="video-wrap"><iframe src="https://www.youtube.com/embed/${ex.video}" allow="autoplay; encrypted-media" allowfullscreen></iframe></div>`;
+  html += `<div class="exercise-card">
+    <div class="day-tag">Today's 5-minute move</div>
+    <h3>${escapeHtml(ex.name)}</h3>
+    <div class="sets">${ex.sets} · ${ex.equip}</div>
+    <div class="desc">${escapeHtml(ex.desc)}</div>
+    <a class="watch-link" href="https://www.youtube.com/watch?v=${ex.video}" target="_blank" rel="noopener">
+      <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>Watch on YouTube</a>
+  </div>`;
+  html += `<div class="card"><div class="row"><div class="row-title"><div class="name">Exercise</div>
+    <div class="meta">${log.exercise?'done today':'focus: belly + side fat'}</div></div>
+    <button class="toggle ${log.exercise?'done':''}" data-toggle="exercise">${CHECK}</button></div></div>`;
+  return html;
+}
+
+// ---------- GRATITUDE ----------
+function renderGratitude(){
+  const ds = todayStr();
+  const log = getLog(ds);
+  let html = '<div class="card">';
+  GRATITUDE_LIST.forEach((g,i)=>{
+    html += `<p style="font-family:'Fraunces',serif; font-size:15px; line-height:1.6; margin:${i===0?'0':'12px'} 0 0;">${i+1}. ${escapeHtml(g)}</p>`;
+  });
+  html += '</div>';
+  html += `<div class="card"><div class="row"><div class="row-title"><div class="name">Gratitude</div>
+    <div class="meta">${log.gratitude?'done today':'read it, feel it, mark it'}</div></div>
+    <button class="toggle ${log.gratitude?'done':''}" data-toggle="gratitude">${CHECK}</button></div></div>`;
+  return html;
+}
+
+// ---------- READING ----------
+function renderReading(){
+  const ds = todayStr();
+  const log = getLog(ds);
+  return `<div class="card"><div class="row"><div class="row-title"><div class="name">Reading</div>
+    <div class="meta">${log.reading?'done today':'not yet done today'}</div></div>
+    <button class="toggle ${log.reading?'done':''}" data-toggle="reading">${CHECK}</button></div></div>`;
+}
+
+// ---------- SELF NOTES ----------
+function renderNotes(){
+  let html = `<div class="section-title">New note</div>
+  <div class="add-form">
+    <textarea id="noteText" placeholder="A realisation, a nice thought — anything worth keeping."></textarea>
+    <div class="btn-row"><button class="btn" id="addNoteBtn">Save note</button></div>
+  </div>`;
+  if(state.selfNotes.length===0){
+    html += `<div class="empty"><div class="sig">✎</div><p>Notes you save will show up here,<br>newest first.</p></div>`;
+    return html;
+  }
+  html += `<div class="section-title">Notes<span class="count">${state.selfNotes.length}</span></div>`;
+  state.selfNotes.forEach(n=>{
+    const d = new Date(n.ts);
+    const dl = d.toLocaleDateString('en-IN',{day:'numeric',month:'short'}) + ' · ' + d.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+    html += `<div class="note-card"><div class="note-date">${dl}</div>
+      <div class="note-text">${escapeHtml(n.text)}</div>
+      <button class="note-del" data-del-note="${n.id}">delete</button></div>`;
+  });
+  return html;
+}
+
+// ---------- GOALS ----------
+function renderGoals(){
+  let html = `<div class="section-title">Add a goal</div>
+  <div class="add-form">
+    <input type="text" id="goalText" placeholder="e.g. Grow trading account 8% this year" maxlength="120">
+    <div class="btn-row"><button class="btn" id="addGoalBtn">Add goal</button></div>
+  </div>`;
+  if(state.goals.length===0){
+    html += `<div class="empty"><div class="sig">✦</div><p>Your goal list will show up here.</p></div>`;
+    return html;
+  }
+  html += `<div class="section-title">Goals<span class="count">${state.goals.length}</span></div>`;
+  state.goals.forEach(g=>{
+    html += `<div class="goal-row ${g.done?'done':''}">
+      <button class="small-toggle ${g.done?'done':''}" data-goal-toggle="${g.id}">${CHECK}</button>
+      <div class="txt">${escapeHtml(g.text)}</div>
+      <button class="goal-del" data-goal-del="${g.id}">✕</button>
+    </div>`;
+  });
+  return html;
+}
+
+// ---------- MAIN RENDER ----------
+const TAB_TITLES = {
+  home:['Home','your day at a glance'],
+  meditate:['Meditate','ten, fifteen, or twenty minutes'],
+  affirm:['Affirmation','say it, feel it'],
+  vision:['Vision Script','the life you\'re building'],
+  today:['One Thing','a clear space and a clear task'],
+  exercise:['Exercise','five minutes, right at home'],
+  gratitude:['Gratitude','from your own journal'],
+  reading:['Reading','a few pages, every day'],
+  notes:['Self-Note','catch the thought before it goes'],
+  goals:['Goals','what you\'re working toward']
+};
+
+function render(){
+  const [title, sub] = TAB_TITLES[activeTab];
+  document.getElementById('headTitle').textContent = title;
+  document.getElementById('headSub').textContent = sub;
+  const content = document.getElementById('content');
+  if(activeTab==='home') content.innerHTML = renderHome();
+  else if(activeTab==='meditate') content.innerHTML = renderMeditate();
+  else if(activeTab==='affirm') content.innerHTML = renderAffirm();
+  else if(activeTab==='vision') content.innerHTML = renderVision();
+  else if(activeTab==='today') content.innerHTML = renderToday();
+  else if(activeTab==='exercise') content.innerHTML = renderExercise();
+  else if(activeTab==='gratitude') content.innerHTML = renderGratitude();
+  else if(activeTab==='reading') content.innerHTML = renderReading();
+  else if(activeTab==='notes') content.innerHTML = renderNotes();
+  else if(activeTab==='goals') content.innerHTML = renderGoals();
+  attachHandlers();
+}
+
+function attachHandlers(){
+  document.querySelectorAll('[data-toggle]').forEach(btn=>{
+    btn.addEventListener('click', ()=> toggleField(btn.dataset.toggle));
+  });
+  document.querySelectorAll('[data-open]').forEach(btn=>{
+    btn.addEventListener('click', ()=> switchTab(btn.dataset.open));
+  });
+  document.querySelectorAll('[data-week]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{ calMonthOffset += parseInt(btn.dataset.week,10); render(); });
+  });
+  document.querySelectorAll('[data-day]').forEach(cell=>{
+    cell.addEventListener('click', ()=>{ selectedDate = cell.dataset.day; render(); });
+  });
+  document.querySelectorAll('[data-day-toggle]').forEach(el=>{
+    el.addEventListener('click', (e)=>{ e.stopPropagation(); toggleField(el.dataset.dayToggle, selectedDate); });
+  });
+  const exportBtn = document.getElementById('exportBtn');
+  if(exportBtn) exportBtn.addEventListener('click', exportBackup);
+  document.querySelectorAll('[data-med]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      window.__medSel = parseInt(btn.dataset.med,10);
+      render();
+    });
+  });
+  attachMedAudioHandlers();
+  const medDoneBtn = document.getElementById('medDoneBtn');
+  if(medDoneBtn){
+    medDoneBtn.addEventListener('click', ()=>{
+      const log = getLog(todayStr());
+      log.meditation = true;
+      saveState();
+      showToast('meditation marked done');
+      render();
+    });
+  }
+  const saveMindBtn = document.getElementById('saveMindBtn');
+  if(saveMindBtn){
+    saveMindBtn.addEventListener('click', ()=>{
+      state.oneThingMind = document.getElementById('mindText').value;
+      saveState();
+      showToast('saved');
+    });
+  }
+  const saveTodoBtn = document.getElementById('saveTodoBtn');
+  if(saveTodoBtn){
+    saveTodoBtn.addEventListener('click', ()=>{
+      state.todos[todayStr()] = document.getElementById('todoText').value.trim();
+      saveState();
+      showToast('saved');
+      render();
+    });
+  }
+  const addNoteBtn = document.getElementById('addNoteBtn');
+  if(addNoteBtn){
+    addNoteBtn.addEventListener('click', ()=>{
+      const t = document.getElementById('noteText');
+      if(t.value.trim()){
+        state.selfNotes.unshift({ id:uid(), text:t.value.trim(), ts:Date.now() });
+        saveState(); t.value=''; render();
+      }
+    });
+  }
+  document.querySelectorAll('[data-del-note]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      if(confirm('Delete this note?')){
+        state.selfNotes = state.selfNotes.filter(n=>n.id!==btn.dataset.delNote);
+        saveState(); render();
+      }
+    });
+  });
+  const addGoalBtn = document.getElementById('addGoalBtn');
+  if(addGoalBtn){
+    addGoalBtn.addEventListener('click', ()=>{
+      const t = document.getElementById('goalText');
+      if(t.value.trim()){
+        state.goals.push({ id:uid(), text:t.value.trim(), done:false, ts:Date.now() });
+        saveState(); t.value=''; render();
+      }
+    });
+  }
+  document.querySelectorAll('[data-goal-toggle]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const g = state.goals.find(g=>g.id===btn.dataset.goalToggle);
+      if(g){ g.done = !g.done; saveState(); render(); }
+    });
+  });
+  document.querySelectorAll('[data-goal-del]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      state.goals = state.goals.filter(g=>g.id!==btn.dataset.goalDel);
+      saveState(); render();
+    });
+  });
+}
+
+function switchTab(tab){
+  activeTab = tab;
+  calMonthOffset = 0;
+  if(tab==='home') selectedDate = todayStr();
+  document.querySelectorAll('.tab-btn').forEach(b=> b.classList.toggle('active', b.dataset.tab===tab));
+  render();
+}
+
+document.querySelectorAll('.tab-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=> switchTab(btn.dataset.tab));
+});
+document.getElementById('homeBtnFixed').addEventListener('click', ()=> switchTab('home'));
+document.getElementById('syncBtn').addEventListener('click', ()=>{
+  if(accessToken) disconnectDrive(); else connectDrive();
+});
+
+(async function init(){
+  await loadState();
+  render();
+  waitForGis(()=>{
+    initGis();
+    updateSyncUI();
+    if(localStorage.getItem('everyday-signed-in')==='1' && tokenClient){
+      tokenClient.requestAccessToken({ prompt: '' });
+    }
+  });
+  if('serviceWorker' in navigator){
+    navigator.serviceWorker.register('./service-worker.js').catch(()=>{});
+  }
+})();
+</script>
+</body>
+</html>
